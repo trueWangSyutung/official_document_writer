@@ -1,0 +1,26 @@
+# 党政公文写作助手依赖
+# 格式要求参考 GB/T 9704-2012
+
+# 核心依赖
+requests==2.31.0
+pandas==2.1.0
+python-docx==1.1.0
+
+# 数据分析
+matplotlib==3.8.0
+seaborn==0.13.0
+numpy==1.26.0
+
+# Excel支持（可选，用于处理Excel格式的数据）
+openpyxl==3.1.2
+xlrd==2.0.1
+
+# 可选依赖
+# 如果需要处理PDF文件，可以安装以下依赖
+# pdfplumber==0.10.3
+# PyPDF2==3.0.1
+
+# 开发依赖
+# pytest==7.4.3
+# black==23.11.0
+# flake8==6.1.0
