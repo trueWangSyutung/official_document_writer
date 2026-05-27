@@ -17,14 +17,9 @@ from pathlib import Path
 from docx import Document
 from docx.shared import Inches, Pt, Cm
 from docx.oxml.ns import qn
-from docx.oxml import parse_xml
-from docx.oxml.shape import CT_Shape
-from docx.enum.shape import WD_INLINE_SHAPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_LINE_SPACING
-from docx.enum.section import WD_SECTION
 
 
 class WordFormatter:
@@ -88,12 +83,6 @@ class WordFormatter:
             normal_style = self.doc.styles['Normal']
             normal_style.font.name = self.BODY_FONT_NAME
             normal_style.font.size = self.FONT_SIZE_BODY
-            normal_style._element.get_or_add_qformat()
-            normal_style._element.set_or_add_qformat()
-
-            rFonts = normal_style._element.get_or_add_rPr()
-            rFonts_rFonts = rFonts.get_or_add_rFonts()
-            rFonts_rFonts.set(qn('w:eastAsia'), self.BODY_FONT_NAME)
         except Exception as e:
             print(f"样式设置警告: {e}")
 
@@ -106,79 +95,61 @@ class WordFormatter:
         self._save_document()
 
     def _add_red_head(self):
-        """添加红头标识"""
+        """添加红头标识 - 符合GB/T 9704-2012规范"""
         if not self.org_name:
             return
 
-        paragraphs = list(self.doc.paragraphs)
+        body = self.doc._body._body
         
-        if paragraphs:
-            first_paragraph = paragraphs[0]
-        else:
-            first_paragraph = self.doc.add_paragraph()
-
-        red_head_paragraphs = []
+        red_head_elements = []
         
-        org_paragraph = self.doc.add_paragraph()
-        org_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        org_run = org_paragraph.add_run(self.org_name)
-        org_run.font.name = self.RED_HEAD_FONT_NAME
-        org_run.font.size = self.FONT_SIZE_RED_HEAD
-        org_run.font.color.rgb = self._hex_to_rgb(self.RED_HEAD_COLOR)
-        rPr = org_run._element.get_or_add_rPr()
-        rFonts = rPr.get_or_add_rFonts()
-        rFonts.set(qn('w:eastAsia'), self.RED_HEAD_FONT_NAME)
-        org_paragraph.paragraph_format.space_after = Pt(30)
-        red_head_paragraphs.append(org_paragraph)
-
-        if self.doc_title:
-            title_paragraph = self.doc.add_paragraph()
-            title_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            title_run = title_paragraph.add_run(self.doc_title)
-            title_run.font.name = self.TITLE_FONT_NAME
-            title_run.font.size = self.FONT_SIZE_TITLE
-            title_run.font.color.rgb = self._hex_to_rgb(self.RED_HEAD_COLOR)
-            rPr = title_run._element.get_or_add_rPr()
-            rFonts = rPr.get_or_add_rFonts()
-            rFonts.set(qn('w:eastAsia'), self.TITLE_FONT_NAME)
-            title_paragraph.paragraph_format.space_after = Pt(20)
-            red_head_paragraphs.append(title_paragraph)
-
         if self.doc_number:
-            num_paragraph = self.doc.add_paragraph()
-            num_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            num_run = num_paragraph.add_run(self.doc_number)
+            num_para = self.doc.add_paragraph()
+            num_para.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            num_run = num_para.add_run(self.doc_number)
             num_run.font.name = self.BODY_FONT_NAME
             num_run.font.size = self.FONT_SIZE_RED_HEAD_NUM
             num_run.font.color.rgb = self._hex_to_rgb(self.RED_HEAD_COLOR)
             rPr = num_run._element.get_or_add_rPr()
             rFonts = rPr.get_or_add_rFonts()
             rFonts.set(qn('w:eastAsia'), self.BODY_FONT_NAME)
-            num_paragraph.paragraph_format.space_after = Pt(15)
-            red_head_paragraphs.append(num_paragraph)
+            num_para.paragraph_format.space_after = Pt(5)
+            red_head_elements.append(num_para._element)
 
-        if self.doc_date:
-            date_paragraph = self.doc.add_paragraph()
-            date_paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            date_run = date_paragraph.add_run(self.doc_date)
-            date_run.font.name = self.BODY_FONT_NAME
-            date_run.font.size = self.FONT_SIZE_RED_HEAD_NUM
-            date_run.font.color.rgb = self._hex_to_rgb(self.RED_HEAD_COLOR)
-            rPr = date_run._element.get_or_add_rPr()
+        org_para = self.doc.add_paragraph()
+        org_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        org_run = org_para.add_run(self.org_name)
+        org_run.font.name = self.RED_HEAD_FONT_NAME
+        org_run.font.size = self.FONT_SIZE_RED_HEAD
+        org_run.font.color.rgb = self._hex_to_rgb(self.RED_HEAD_COLOR)
+        rPr = org_run._element.get_or_add_rPr()
+        rFonts = rPr.get_or_add_rFonts()
+        rFonts.set(qn('w:eastAsia'), self.RED_HEAD_FONT_NAME)
+        org_para.paragraph_format.space_after = Pt(10)
+        red_head_elements.append(org_para._element)
+        
+        if self.doc_title:
+            title_para = self.doc.add_paragraph()
+            title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            title_run = title_para.add_run(self.doc_title)
+            title_run.font.name = self.TITLE_FONT_NAME
+            title_run.font.size = self.FONT_SIZE_TITLE
+            title_run.font.color.rgb = self._hex_to_rgb(self.RED_HEAD_COLOR)
+            rPr = title_run._element.get_or_add_rPr()
             rFonts = rPr.get_or_add_rFonts()
-            rFonts.set(qn('w:eastAsia'), self.BODY_FONT_NAME)
-            date_paragraph.paragraph_format.space_after = Pt(25)
-            red_head_paragraphs.append(date_paragraph)
-
-        line_paragraph = self.doc.add_paragraph()
-        line_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        line_run = line_paragraph.add_run("─" * 40)
+            rFonts.set(qn('w:eastAsia'), self.TITLE_FONT_NAME)
+            title_para.paragraph_format.space_after = Pt(25)
+            red_head_elements.append(title_para._element)
+        
+        line_para = self.doc.add_paragraph()
+        line_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        line_run = line_para.add_run("─" * 60)
         line_run.font.color.rgb = self._hex_to_rgb(self.RED_HEAD_COLOR)
-        line_paragraph.paragraph_format.space_after = Pt(20)
-        red_head_paragraphs.append(line_paragraph)
-
-        for i, para in enumerate(red_head_paragraphs):
-            self.doc._body.insert(0, para._element)
+        line_para.paragraph_format.space_after = Pt(15)
+        red_head_elements.append(line_para._element)
+        
+        for element in reversed(red_head_elements):
+            body.insert(0, element)
 
     def _hex_to_rgb(self, hex_color):
         """将十六进制颜色转换为RGB对象"""
@@ -271,7 +242,7 @@ if __name__ == "__main__":
     parser.add_argument('--red-head', action='store_true', help='添加红头标识')
     parser.add_argument('--org', default='国央企', help='单位名称（红头使用）')
     parser.add_argument('--title', default='', help='文件标题（红头使用）')
-    parser.add_argument('--number', default='', help='文件编号（红头使用）')
+    parser.add_argument('--number', default='', help='文件编号（红头使用，左对齐）')
     parser.add_argument('--date', default='', help='日期（红头使用）')
 
     args = parser.parse_args()
